@@ -6,7 +6,10 @@ import numpy as np
 import optuna
 import torch
 import torch.optim as opt
+torch.multiprocessing.set_sharing_strategy('file_system')
 from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 
 from cross_db_benchmark.benchmark_tools.utils import load_json
 from models.dataset.dataset_creation import create_dataloader
@@ -168,9 +171,9 @@ def train_model(workload_runs,
             test_workload = os.path.basename(p).replace('.json', '')
             target_test_csv_paths.append(os.path.join(target_dir, f'test_{filename_model}_{test_workload}.csv'))
 
-    if len(target_test_csv_paths) > 0 and all([os.path.exists(p) for p in target_test_csv_paths]):
-        print(f"Model was already trained and tested ({target_test_csv_paths} exists)")
-        return
+    #if len(target_test_csv_paths) > 0 and all([os.path.exists(p) for p in target_test_csv_paths]):
+     #   print(f"Model was already trained and tested ({target_test_csv_paths} exists)")
+        #return
 
     # create a dataset
     loss_class_name = final_mlp_kwargs['loss_class_name']
@@ -202,7 +205,8 @@ def train_model(workload_runs,
 
     csv_stats, epochs_wo_improvement, epoch, model, optimizer, metrics, finished = \
         load_checkpoint(model, target_dir, filename_model, optimizer=optimizer, metrics=metrics, filetype='.pt')
-
+    finished = False
+    skip_train = False
     # train an actual model (q-error? or which other loss?)
     while epoch < epochs and not finished and not skip_train:
         print(f"Epoch {epoch}")
@@ -283,12 +287,14 @@ def train_model(workload_runs,
 
     if trial is not None:
         return optuna_intermediate_value(metrics)
+    return model
 
 
 def train_default(workload_runs,
                   test_workload_runs,
                   statistics_file,
-                  target_dir, filename_model,
+                  target_dir, 
+                  filename_model,
                   device='cpu',
                   plan_featurization='PostgresTrueCardDetail',
                   loss_class_name='QLoss',
@@ -422,5 +428,6 @@ def train_readout_hyperparams(workload_runs,
                                   f"and reading does not seem to fit"
 
     param_dict = flatten_dict(train_kwargs)
-    train_model(workload_runs, test_workload_runs, statistics_file, target_dir, filename_model,
+    model = train_model(workload_runs, test_workload_runs, statistics_file, target_dir, filename_model,
                 param_dict=param_dict, database=database, **train_kwargs)
+    return model
