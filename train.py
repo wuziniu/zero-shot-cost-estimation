@@ -25,6 +25,7 @@ if __name__ == '__main__':
                         choices=list(DatabaseSystem))
     parser.add_argument('--gather_feature_statistics', action='store_true')
     parser.add_argument('--skip_train', action='store_true')
+    parser.add_argument('--save_best', action='store_true')
     parser.add_argument('--train_model', action='store_true')
     parser.add_argument('--plan_featurization', default='PostgresTrueCardDetail')
     parser.add_argument('--hyperparameter_path', default="setup/tuned_hyperparameters/tune_best_config.json")
@@ -101,7 +102,7 @@ if __name__ == '__main__':
                           num_workers=args.num_workers, max_epoch_tuples=args.max_epoch_tuples,
                           seed=args.seed, database=args.database, limit_queries=args.limit_queries,
                           limit_queries_affected_wl=args.limit_queries_affected_wl, max_no_epochs=args.max_no_epochs,
-                          skip_train=args.skip_train, loss_class_name=args.loss_class_name)
+                          skip_train=args.skip_train, loss_class_name=args.loss_class_name, save_best=args.save_best)
         else:
             model = train_readout_hyperparams(args.workload_runs, args.test_workload_runs, args.statistics_file, args.target,
                                       args.filename_model, args.hyperparameter_path, device=args.device,
@@ -109,4 +110,4 @@ if __name__ == '__main__':
                                       seed=args.seed, database=args.database, limit_queries=args.limit_queries,
                                       limit_queries_affected_wl=args.limit_queries_affected_wl,
                                       max_no_epochs=args.max_no_epochs, skip_train=args.skip_train,
-                                      loss_class_name=args.loss_class_name)
+                                      loss_class_name=args.loss_class_name, save_best=args.save_best)

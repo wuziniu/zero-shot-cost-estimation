@@ -54,7 +54,7 @@ def train_epoch(epoch_stats, train_loader, model, optimizer, max_epoch_tuples, c
 
 
 def validate_model(val_loader, model, epoch=0, epoch_stats=None, metrics=None, max_epoch_tuples=None,
-                   custom_batch_to=batch_to, verbose=False, log_all_queries=False):
+                   custom_batch_to=batch_to, verbose=False, log_all_queries=False, return_metric=False):
     model.eval()
 
     with torch.autograd.no_grad():
@@ -119,8 +119,13 @@ def validate_model(val_loader, model, epoch=0, epoch_stats=None, metrics=None, m
                 if best_seen and metric.early_stopping_metric:
                     any_best_metric = True
                     print(f"New best model for {metric.metric_name}")
+        if return_metric:
+            qerror = np.maximum(true / pred, pred / true)
+            qerror50 = np.percentile(qerror, 50)
+        else:
+            qerror50 = None
 
-    return any_best_metric
+    return any_best_metric, qerror50
 
 
 def optuna_intermediate_value(metrics):
@@ -158,9 +163,13 @@ def train_model(workload_runs,
                 limit_queries=None,
                 limit_queries_affected_wl=None,
                 skip_train=False,
-                seed=0):
+                seed=0,
+                save_best=False):
     if model_kwargs is None:
         model_kwargs = dict()
+
+    if save_best:
+        best_qerror = np.infty
 
     # seed for reproducibility
     torch.manual_seed(seed)
@@ -218,8 +227,9 @@ def train_model(workload_runs,
         # try:
         train_epoch(epoch_stats, train_loader, model, optimizer, max_epoch_tuples)
 
-        any_best_metric = validate_model(val_loader, model, epoch=epoch, epoch_stats=epoch_stats, metrics=metrics,
-                                         max_epoch_tuples=max_epoch_tuples)
+        any_best_metric, qerror50 = validate_model(val_loader, model, epoch=epoch, epoch_stats=epoch_stats,
+                                                   metrics=metrics, max_epoch_tuples=max_epoch_tuples,
+                                                   return_metric=save_best)
         epoch_stats.update(epoch=epoch, epoch_time=time.perf_counter() - epoch_start_time)
 
         # report to optuna
@@ -252,8 +262,14 @@ def train_model(workload_runs,
         csv_stats.append(epoch_stats)
 
         # save current state of training allowing us to resume if this is stopped
-        save_checkpoint(epochs_wo_improvement, epoch, model, optimizer, target_dir,
+        if not save_best:
+            save_checkpoint(epochs_wo_improvement, epoch, model, optimizer, target_dir,
                         filename_model, metrics=metrics, csv_stats=csv_stats, finished=stop_early)
+        else:
+            if qerror50 < best_qerror:
+                best_qerror = qerror50
+                save_checkpoint(epochs_wo_improvement, epoch, model, optimizer, target_dir,
+                                filename_model, metrics=metrics, csv_stats=csv_stats, finished=stop_early)
 
         epoch += 1
 
@@ -306,7 +322,8 @@ def train_default(workload_runs,
                   limit_queries=None,
                   limit_queries_affected_wl=None,
                   max_no_epochs=None,
-                  skip_train=False):
+                  skip_train=False,
+                  save_best=False):
     """
     Sets default parameters and trains model
     """
@@ -346,7 +363,8 @@ def train_default(workload_runs,
                         seed=seed,
                         limit_queries=limit_queries,
                         limit_queries_affected_wl=limit_queries_affected_wl,
-                        skip_train=skip_train
+                        skip_train=skip_train,
+                        save_best=save_best
                         )
     param_dict = flatten_dict(train_kwargs)
 
@@ -368,7 +386,8 @@ def train_readout_hyperparams(workload_runs,
                               limit_queries=None,
                               limit_queries_affected_wl=None,
                               max_no_epochs=None,
-                              skip_train=False
+                              skip_train=False,
+                              save_best=False
                               ):
     """
     Reads out hyperparameters and trains model
@@ -422,7 +441,8 @@ def train_readout_hyperparams(workload_runs,
                         seed=seed,
                         limit_queries=limit_queries,
                         limit_queries_affected_wl=limit_queries_affected_wl,
-                        skip_train=skip_train
+                        skip_train=skip_train,
+                        save_best=save_best
                         )
 
     assert len(hyperparams) == 0, f"Not all hyperparams were used (not used: {hyperparams.keys()}). Hence generation " \
