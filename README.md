@@ -183,7 +183,7 @@ python3 train.py --train_model --workload_runs ../zero-shot-data/runs/parsed_pla
 Retrain the model with the additional workload
 
 ```
-python3 train.py --train_model --workload_runs ../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s4_c8220.json ../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s5_c8220.json ../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s6_c8220.json --target ../zero-shot-data/evaluation/job_full_few_shot_tune/ --filename_model imdb_full_0_pg_est --hyperparameter_path setup/tuned_hyperparameters/tune_est_best_config.json --seed 0 --limit_queries 1000 --limit_queries_affected_wl 3  --filename_model imdb_full_lmtq_1000
+python3 train.py --train_model --workload_runs ../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s4_c8220.json ../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s5_c8220.json ../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s6_c8220.json --target ../zero-shot-data/evaluation/job_full_few_shot_tune/ --hyperparameter_path setup/tuned_hyperparameters/tune_est_best_config.json --seed 0 --limit_queries 1000 --limit_queries_affected_wl 3  --filename_model imdb_full_lmtq_1000
 ```
 
 
