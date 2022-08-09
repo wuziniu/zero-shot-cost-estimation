@@ -103,6 +103,7 @@ def validate_model(val_loader, model, epoch=0, epoch_stats=None, metrics=None, m
         if verbose:
             print(f'labels: {labels}')
             print(f'preds: {preds}')
+        print(f"evaluation runtime range: {np.min(labels)} --- {np.max(labels)}")
         epoch_stats.update(val_std=np.std(labels))
         if log_all_queries:
             epoch_stats.update(val_labels=[float(f) for f in labels])
