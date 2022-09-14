@@ -131,12 +131,12 @@ def parse_plans(run_stats, min_runtime=100, max_runtime=30000, parse_baseline=Fa
 
     # parse individual queries
     parsed_plans = []
+    sql_queries = []
     avg_runtimes = []
     no_tables = []
     no_filters = []
     op_perc = collections.defaultdict(int)
-    for q in tqdm(run_stats.query_list):
-
+    for query_no, q in enumerate(tqdm(run_stats.query_list)):
         # either only parse explain part of query or skip entirely
         curr_explain_only = explain_only
         # do not parse timeout queries
@@ -266,6 +266,7 @@ def parse_plans(run_stats, min_runtime=100, max_runtime=30000, parse_baseline=Fa
         no_filters.append(len([fc for fc in filter_columns if fc[0] is not None]))
 
         parsed_plans.append(analyze_plan)
+        sql_queries.append(q['sql'])
 
         if cap_queries is not None and len(parsed_plans) >= cap_queries:
             print(f"Parsed {cap_queries} queries. Stopping parsing.")
@@ -312,7 +313,9 @@ def parse_plans(run_stats, min_runtime=100, max_runtime=30000, parse_baseline=Fa
     print(f"Parsed {len(parsed_plans)} plans ({len(run_stats.query_list) - len(parsed_plans)} had zero-cardinalities "
           f"or were too fast).")
 
-    parsed_runs = dict(parsed_plans=parsed_plans, database_stats=database_stats,
+    parsed_runs = dict(parsed_plans=parsed_plans,
+                       sql_queries=sql_queries,
+                       database_stats=database_stats,
                        run_kwargs=run_stats.run_kwargs)
 
     stats = dict(
