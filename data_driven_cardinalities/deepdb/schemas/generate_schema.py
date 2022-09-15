@@ -9,8 +9,8 @@ from data_driven_cardinalities.deepdb.ensemble_compilation.graph_representation 
 
 
 def gen_schema(dataset, source_dir):
-    schema = load_json(f'cross_db_benchmark/datasets/{dataset}/schema.json')
-    col_stats = load_json(f'cross_db_benchmark/datasets/{dataset}/column_statistics.json', namespace=False)
+    schema = load_json(f'/home/ziniuw/zero-shot-cost-estimation/cross_db_benchmark/datasets/{dataset}/schema.json')
+    col_stats = load_json(f'/home/ziniuw/zero-shot-cost-estimation/cross_db_benchmark/datasets/{dataset}/column_statistics.json', namespace=False)
     custom_nan_values = ['', '#N/A', '#N/A N/A', '#NA', '-1.#IND', '-1.#QNAN', '-NaN', '-nan', '1.#IND',
                          '1.#QNAN', '<NA>', 'N/A', 'NULL', 'NaN', 'n/a', 'nan', 'null']
     read_kwargs = dict(**vars(schema.csv_kwargs), keep_default_na=False, na_values=custom_nan_values)
@@ -69,7 +69,6 @@ def gen_schema(dataset, source_dir):
         no_compression = [a for a in attributes if a not in irrelevant_attributes and (a in scaled_join_keys[t] or
                           a in {'kind_id', 'info_type_id', 'role_id', 'keyword_id', 'company_id', 'company_type_id'})]
 
-        print(no_compression)
         schema_graph.add_table(Table(t, attributes=attributes,
                                      irrelevant_attributes=irrelevant_attributes,
                                      no_compression=no_compression,
@@ -84,6 +83,5 @@ def gen_schema(dataset, source_dir):
     schema_graph.read_kwargs = read_kwargs
     schema_graph.join_keys = join_keys
     schema_graph.scaled_join_keys = scaled_join_keys
-    print(schema_graph.scaled_join_keys)
 
     return schema_graph

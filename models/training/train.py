@@ -120,7 +120,7 @@ def validate_model(val_loader, model, epoch=0, epoch_stats=None, metrics=None, m
                     any_best_metric = True
                     print(f"New best model for {metric.metric_name}")
         if return_metric:
-            qerror = np.maximum(true / pred, pred / true)
+            qerror = np.maximum(labels / preds, preds / labels)
             qerror50 = np.percentile(qerror, 50)
         else:
             qerror50 = None

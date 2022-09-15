@@ -8,6 +8,7 @@ class PostgresZeroShotModel(ZeroShotModel):
     """
     def __init__(self, plan_featurization_name=None, **zero_shot_kwargs):
         plan_featurization, encoders = None, None
+        self.plan_featurization_name = plan_featurization_name
         if plan_featurization_name is not None:
             plan_featurization = postgres_plan_featurizations.__dict__[plan_featurization_name]
 

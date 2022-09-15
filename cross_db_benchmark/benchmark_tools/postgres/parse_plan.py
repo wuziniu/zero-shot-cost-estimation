@@ -266,7 +266,7 @@ def parse_plans(run_stats, min_runtime=100, max_runtime=30000, parse_baseline=Fa
         no_filters.append(len([fc for fc in filter_columns if fc[0] is not None]))
 
         parsed_plans.append(analyze_plan)
-        sql_queries.append(q['sql'])
+        sql_queries.append(q.sql)
 
         if cap_queries is not None and len(parsed_plans) >= cap_queries:
             print(f"Parsed {cap_queries} queries. Stopping parsing.")
