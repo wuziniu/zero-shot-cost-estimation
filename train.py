@@ -74,7 +74,7 @@ if __name__ == '__main__':
     if args.workload_runs is None:
         args.workload_runs = workload_runs
     else:
-        args.workload_runs = workload_runs + args.workload_runs
+        args.workload_runs = args.workload_runs + workload_runs
         
         
     if args.test_workload_runs is None:

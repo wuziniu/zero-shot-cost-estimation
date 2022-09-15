@@ -48,8 +48,6 @@ def train_epoch(epoch_stats, train_loader, model, optimizer, max_epoch_tuples, c
 
     mean_loss = np.mean(losses)
     mean_rmse = np.sqrt(np.mean(np.square(errs)))
-    # print(f"Train Loss: {mean_loss:.2f}")
-    # print(f"Train RMSE: {mean_rmse:.2f}")
     epoch_stats.update(train_time=time.perf_counter() - train_start_t, mean_loss=mean_loss, mean_rmse=mean_rmse)
 
 
@@ -181,10 +179,6 @@ def train_model(workload_runs,
             test_workload = os.path.basename(p).replace('.json', '')
             target_test_csv_paths.append(os.path.join(target_dir, f'test_{filename_model}_{test_workload}.csv'))
 
-    #if len(target_test_csv_paths) > 0 and all([os.path.exists(p) for p in target_test_csv_paths]):
-     #   print(f"Model was already trained and tested ({target_test_csv_paths} exists)")
-        #return
-
     # create a dataset
     loss_class_name = final_mlp_kwargs['loss_class_name']
     label_norm, feature_statistics, train_loader, val_loader, test_loaders = \
@@ -210,7 +204,6 @@ def train_model(workload_runs,
                                        **model_kwargs)
     # move to gpu
     model = model.to(model.device)
-    print(model)
     optimizer = opt.__dict__[optimizer_class_name](model.parameters(), **optimizer_kwargs)
 
     csv_stats, epochs_wo_improvement, epoch, model, optimizer, metrics, finished = \
@@ -280,8 +273,6 @@ def train_model(workload_runs,
         if stop_early:
             print(f"Early stopping kicked in due to no improvement in {early_stopping_patience} epochs")
             break
-        # except:
-        #     print("Error during epoch. Trying again.")
 
     # if we are not doing hyperparameter search, evaluate test set
     if trial is None and test_loaders is not None:
