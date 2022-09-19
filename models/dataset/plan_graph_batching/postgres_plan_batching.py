@@ -377,6 +377,8 @@ def create_node_types_per_depth(plan_depths, plan_to_plan_edges):
 def add_numerical_scalers(feature_statistics):
     for k, v in feature_statistics.items():
         if v.get('type') == str(FeatureType.numeric):
+            #print("=====================================")
+            #print(k, v)
             scaler = RobustScaler()
             scaler.center_ = v['center']
             scaler.scale_ = v['scale']
