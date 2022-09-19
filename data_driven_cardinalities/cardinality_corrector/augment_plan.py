@@ -45,7 +45,8 @@ def get_table_aliases_imdb():
     return table_aliases
 
 
-def augment_cardinalities(schema, all_MSCN_est, src, table_aliases, target, scale=1):
+def augment_cardinalities(schema, all_MSCN_est, src, table_aliases, target, statistics_file, target_statistics_file,
+                          hyperparameter_path, target_hyperparameter_path, scale=1):
     try:
         run = load_json(src, namespace=True)
     except JSONDecodeError:
@@ -53,13 +54,14 @@ def augment_cardinalities(schema, all_MSCN_est, src, table_aliases, target, scal
 
     q_stats = []
 
-    # find out if this a non_inclusive workload (< previously replaced by <=)
+    # find out if this an non_inclusive workload (< previously replaced by <=)
     non_inclusive = False
     if any([b in src for b in ['job-light', 'scale', 'synthetic']]):
         non_inclusive = True
         print("Assuming NON-INCLUSIVE workload")
 
     est_pg = 0
+    est_mscn = 0
     all_query_tables = []
     for q_id, p in enumerate(tqdm(run.parsed_plans)):
         if q_id not in all_MSCN_est:
@@ -67,21 +69,23 @@ def augment_cardinalities(schema, all_MSCN_est, src, table_aliases, target, scal
             continue
         MSCN_est = all_MSCN_est[q_id]
         p.plan_parameters.est_pg = 0
+        p.plan_parameters.est_mscn = 0
         all_tables = []
         _ = augment_bottom_up(schema, p, q_id, run.database_stats, MSCN_est, table_aliases, q_stats, p, scale,
                               non_inclusive=non_inclusive, all_tables=all_tables)
         all_query_tables.append(all_tables)
         est_pg += p.plan_parameters.est_pg
+        est_mscn += p.plan_parameters.est_mscn
 
         def augment_prod(p):
             if len(p.children) == 0:
-                p.plan_parameters.est_children_card = 1
+                p.plan_parameters.cc_est_children_card = 1
             else:
                 child_card = 1
                 for c in p.children:
-                    child_card *= c.plan_parameters.est_card
+                    child_card *= c.plan_parameters.cc_est_card
                     augment_prod(c)
-                p.plan_parameters.est_children_card = child_card
+                p.plan_parameters.cc_est_children_card = child_card
 
         augment_prod(p)
 
@@ -98,7 +102,20 @@ def augment_cardinalities(schema, all_MSCN_est, src, table_aliases, target, scal
     os.makedirs(target_dir, exist_ok=True)
     with open(target, 'w') as outfile:
         json.dump(argumented_queries, outfile, default=dumper)
-    return all_query_tables
+
+    feature_statistics = load_json(statistics_file, namespace=False)
+    feature_statistics['est_mscn'] = {'max': 0.0, 'scale': 1.0, 'center': 1.0, 'type': 'numeric'}
+    feature_statistics['cc_est_card'] = feature_statistics['act_card']
+    feature_statistics['cc_est_children_card'] = feature_statistics['act_children_card']
+    with open(target_statistics_file, "w") as f:
+        json.dump(feature_statistics, f)
+
+    hyperparameter = load_json(hyperparameter_path, namespace=False)
+    hyperparameter['plan_featurization_name'] = "PostgresCardCorrectorDetail"
+    with open(target_hyperparameter_path, "w") as f:
+        json.dump(hyperparameter, f)
+
+    return all_query_tables, est_mscn, est_pg, q_stats
 
 
 def report_stats(est_mscn, est_pg, q_stats):
@@ -110,7 +127,6 @@ def report_stats(est_mscn, est_pg, q_stats):
 
         report_percentiles('q_errors_pg')
         report_percentiles('q_errors_mscn')
-        report_percentiles('latencies')
         print(f"{est_mscn / (est_mscn + est_pg) * 100:.2f}% estimated using MSCN")
 
 
@@ -170,17 +186,17 @@ def augment_bottom_up(schema, plan, q_id, database_statistics, MSCN_est, table_a
 
     # query not supported
     if not query_parsed:
-        plan.plan_parameters.est_card = pg_est_card
+        plan.plan_parameters.cc_est_card = pg_est_card
         top_p.plan_parameters.est_pg += 1
 
     # group by not directly supported
     elif aggregation_below:
-        plan.plan_parameters.est_card = pg_est_card
+        plan.plan_parameters.cc_est_card = pg_est_card
         top_p.plan_parameters.est_pg += 1
 
     # we do not care about really small cardinalities
     elif (act_card is not None and pg_est_card <= 1000 and act_card <= 1000):
-        plan.plan_parameters.est_card = pg_est_card
+        plan.plan_parameters.cc_est_card = pg_est_card
         top_p.plan_parameters.est_pg += 1
 
     else:
@@ -208,11 +224,11 @@ def augment_bottom_up(schema, plan, q_id, database_statistics, MSCN_est, table_a
 
             # this was probably a bug, anyway rarely happens
             if q_err_mscn > 100 * q_err_pg:
-                plan.plan_parameters.est_card = pg_est_card
+                plan.plan_parameters.cc_est_card = pg_est_card
                 top_p.plan_parameters.est_pg += 1
             else:
-                plan.plan_parameters.est_card = cardinality_predict
-                top_p.plan_parameters.est_pg += 1
+                plan.plan_parameters.cc_est_card = cardinality_predict
+                top_p.plan_parameters.est_mscn += 1
 
                 q_stats.append({
                     'query_id': q_id,
@@ -224,7 +240,7 @@ def augment_bottom_up(schema, plan, q_id, database_statistics, MSCN_est, table_a
         elif plan.plan_parameters.op_name in {'Index Only Scan', 'Index Scan', 'Parallel Index Only Scan',
                                               'Bitmap Index Scan', 'Parallel Bitmap Heap Scan', 'Bitmap Heap Scan',
                                               'Sort', 'Parallel Index Scan', 'BitmapAnd'}:
-            plan.plan_parameters.est_card = pg_est_card
+            plan.plan_parameters.cc_est_card = pg_est_card
             top_p.plan_parameters.est_pg += 1
         else:
             raise NotImplementedError(plan.plan_parameters.op_name)
@@ -260,4 +276,3 @@ def q_err(cardinality_predict, cardinality_true):
     else:
         q_error = max(cardinality_predict / cardinality_true, cardinality_true / cardinality_predict)
     return q_error
-
