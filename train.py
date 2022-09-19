@@ -78,8 +78,7 @@ if __name__ == '__main__':
     if args.workload_runs is None:
         args.workload_runs = workload_runs
     else:
-        args.workload_runs = workload_runs + args.workload_runs
-        
+        args.workload_runs = workload_runs + args.workload_runs       
         
     if args.test_workload_runs is None:
         args.test_workload_runs = ["../zero-shot-data/runs/parsed_plans/imdb_full/job_full_c8220.json"]
