@@ -206,7 +206,8 @@ def parse_plans(run_stats, min_runtime=100, max_runtime=30000, parse_baseline=Fa
 
         analyze_plan.parse_columns_bottom_up(column_id_mapping, partial_column_name_mapping, table_id_mapping,
                                              alias_dict=alias_dict)
-
+        analyze_plan.tables = tables
+        analyze_plan.num_tables = len(tables)
         analyze_plan.plan_runtime = avg_runtime
 
         def augment_no_workers(p, top_no_workers=0):

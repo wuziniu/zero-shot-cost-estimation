@@ -21,6 +21,10 @@ if __name__ == '__main__':
     parser.add_argument('--max_no_epochs', type=int, default=None)
     parser.add_argument('--limit_queries', type=int, default=None)
     parser.add_argument('--limit_queries_affected_wl', type=int, default=None)
+    parser.add_argument('--limit_num_tables', type=int, default=None)
+    parser.add_argument('--limit_runtime', type=int, default=None)
+    parser.add_argument('--lower_bound_num_tables', type=int, default=None)
+    parser.add_argument('--lower_bound_runtime', type=int, default=None)
     parser.add_argument('--database', default=DatabaseSystem.POSTGRES, type=DatabaseSystem,
                         choices=list(DatabaseSystem))
     parser.add_argument('--gather_feature_statistics', action='store_true')
@@ -74,7 +78,7 @@ if __name__ == '__main__':
     if args.workload_runs is None:
         args.workload_runs = workload_runs
     else:
-        args.workload_runs = args.workload_runs + workload_runs
+        args.workload_runs = workload_runs + args.workload_runs
         
         
     if args.test_workload_runs is None:
@@ -109,5 +113,9 @@ if __name__ == '__main__':
                                       num_workers=args.num_workers, max_epoch_tuples=args.max_epoch_tuples,
                                       seed=args.seed, database=args.database, limit_queries=args.limit_queries,
                                       limit_queries_affected_wl=args.limit_queries_affected_wl,
+                                      limit_num_tables=args.limit_num_tables,
+                                      limit_runtime=args.limit_runtime,
+                                      lower_bound_num_tables=args.lower_bound_num_tables,
+                                      lower_bound_runtime=args.lower_bound_runtime,
                                       max_no_epochs=args.max_no_epochs, skip_train=args.skip_train,
                                       loss_class_name=args.loss_class_name, save_best=args.save_best)

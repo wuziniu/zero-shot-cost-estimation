@@ -11,7 +11,8 @@ from models.dataset.plan_dataset import PlanDataset
 from models.dataset.plan_graph_batching.plan_batchers import plan_collator_dict
 
 
-def read_workload_runs(workload_run_paths, limit_queries=None, limit_queries_affected_wl=None):
+def read_workload_runs(workload_run_paths, limit_queries=None, limit_queries_affected_wl=None, limit_num_tables=None,
+                       limit_runtime=None, lower_bound_num_tables=None, lower_bound_runtime=None):
     # reads several workload runs
     plans = []
     database_statistics = dict()
@@ -30,10 +31,20 @@ def read_workload_runs(workload_run_paths, limit_queries=None, limit_queries_aff
                 limit_per_ds = limit_queries // limit_queries_affected_wl
                 print(f"Capping workload {source} after {limit_per_ds} queries")
 
+        num_added_query = 0
         for p_id, plan in enumerate(run.parsed_plans):
+            if limit_runtime is not None and plan.plan_runtime > limit_runtime:
+                continue
+            if lower_bound_runtime is not None and plan.plan_runtime <= lower_bound_runtime:
+                continue
+            if limit_num_tables is not None and plan.num_tables > limit_num_tables:
+                continue
+            if lower_bound_num_tables is not None and plan.num_tables <= lower_bound_num_tables:
+                continue
             plan.database_id = i
             plans.append(plan)
-            if limit_per_ds is not None and p_id > limit_per_ds:
+            num_added_query += 1
+            if limit_per_ds is not None and num_added_query > limit_per_ds:
                 print("Stopping now")
                 break
 
@@ -47,9 +58,14 @@ def _inv_log1p(x):
 
 
 def create_datasets(workload_run_paths, cap_training_samples=None, val_ratio=0.15, limit_queries=None,
-                    limit_queries_affected_wl=None, shuffle_before_split=True, loss_class_name=None):
+                    limit_queries_affected_wl=None, limit_num_tables=None, limit_runtime=None,
+                    lower_bound_num_tables=None, lower_bound_runtime=None,
+                    shuffle_before_split=True, loss_class_name=None):
     plans, database_statistics = read_workload_runs(workload_run_paths, limit_queries=limit_queries,
-                                                    limit_queries_affected_wl=limit_queries_affected_wl)
+                                                    limit_queries_affected_wl=limit_queries_affected_wl,
+                                                    limit_num_tables=limit_num_tables, limit_runtime=limit_runtime,
+                                                    lower_bound_num_tables=lower_bound_num_tables,
+                                                    lower_bound_runtime=lower_bound_runtime)
 
     no_plans = len(plans)
     plan_idxs = list(range(no_plans))
@@ -97,7 +113,9 @@ def derive_label_normalizer(loss_class_name, y):
 
 def create_dataloader(workload_run_paths, test_workload_run_paths, statistics_file, plan_featurization_name, database,
                       val_ratio=0.15, batch_size=32, shuffle=True, num_workers=1, pin_memory=False,
-                      limit_queries=None, limit_queries_affected_wl=None, loss_class_name=None):
+                      limit_queries=None, limit_queries_affected_wl=None, limit_num_tables=None,
+                      lower_bound_num_tables=None, lower_bound_runtime=None,
+                      limit_runtime=None, loss_class_name=None):
     """
     Creates dataloaders that batches physical plans to train the model in a distributed fashion.
     :param workload_run_paths:
@@ -114,7 +132,12 @@ def create_dataloader(workload_run_paths, test_workload_run_paths, statistics_fi
                                                                                   loss_class_name=loss_class_name,
                                                                                   val_ratio=val_ratio,
                                                                                   limit_queries=limit_queries,
-                                                                                  limit_queries_affected_wl=limit_queries_affected_wl)
+                                                                                  limit_queries_affected_wl=limit_queries_affected_wl,
+                                                                                  limit_num_tables=limit_num_tables,
+                                                                                  limit_runtime=limit_runtime,
+                                                                                  lower_bound_num_tables=lower_bound_num_tables,
+                                                                                  lower_bound_runtime=lower_bound_runtime
+                                                                                  )
 
     # postgres_plan_collator does the heavy lifting of creating the graphs and extracting the features and thus requires both
     # database statistics but also feature statistics
