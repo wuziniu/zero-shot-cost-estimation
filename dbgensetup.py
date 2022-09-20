@@ -16,6 +16,7 @@ from cross_db_benchmark.benchmark_tools.parse_run import parse_run
 from cross_db_benchmark.datasets.datasets import database_list, ext_database_list
 from cross_db_benchmark.meta_tools.download_relational_fit import download_from_relational_fit
 from cross_db_benchmark.meta_tools.scale_dataset import scale_up_dataset
+from models.preprocessing.add_num_tables_to_query import add_num_tables
 
 from run_benchmark import StoreDictKeyPair
 from setup.postgres.run_workload_commands import gen_run_workload_commands
@@ -88,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--print_run_commands', action='store_true')
     parser.add_argument('--parse_all_queries', action='store_true')
     parser.add_argument('--print_zero_shot_commands', action='store_true')
+    parser.add_argument('--add_num_tables_to_query', action='store_true')
 
     args = parser.parse_args()
 
@@ -200,3 +202,53 @@ if __name__ == '__main__':
 
         print()
         print(f"Total plans parsed in {time.perf_counter() - start_t:.2f} secs: {eval.no_plans.sum()}")
+
+    if args.add_num_tables_to_query:
+        workload_runs = ["../zero-shot-data/runs/parsed_plans/airline/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/airline/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/ssb/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/ssb/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/tpc_h/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/walmart/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/walmart/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/financial/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/financial/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/basketball/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/basketball/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/accidents/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/accidents/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/movielens/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/movielens/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/baseball/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/baseball/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/hepatitis/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/hepatitis/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/tournament/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/tournament/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/credit/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/credit/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/employee/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/employee/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/consumer/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/consumer/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/geneea/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/geneea/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/genome/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/genome/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/carcinogenesis/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/carcinogenesis/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/seznam/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/seznam/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/fhnk/complex_workload_200k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/fhnk/workload_100k_s1_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s4_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s5_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/imdb_full/complex_workload_400k_s6_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/imdb_full/complex_queries_training_50k.json",
+                         "../zero-shot-data/runs/parsed_plans/imdb_full/job_full_c8220.json",
+                         "../zero-shot-data/runs/parsed_plans/MSCN_augmented/complex_queries_testing_2k.json",
+                         "../zero-shot-data/runs/parsed_plans/MSCN_augmented/complex_queries_testing_2k_tuned_0.5.json",
+                         "../zero-shot-data/runs/parsed_plans/MSCN_augmented/complex_queries_testing_2k_tuned_0.9.json", ]
+        add_num_tables(workload_runs)
+
+
