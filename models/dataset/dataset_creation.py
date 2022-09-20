@@ -32,6 +32,8 @@ def read_workload_runs(workload_run_paths, limit_queries=None, limit_queries_aff
                 print(f"Capping workload {source} after {limit_per_ds} queries")
 
         num_added_query = 0
+        print(f"limit_runtime: {limit_runtime}; lower_bound_runtime: {lower_bound_runtime};"
+              f"limit_num_tables: {limit_num_tables}; lower_bound_num_tables: {lower_bound_num_tables}")
         for p_id, plan in enumerate(run.parsed_plans):
             if limit_runtime is not None and plan.plan_runtime > limit_runtime:
                 continue
